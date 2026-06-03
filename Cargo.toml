@@ -1,0 +1,20 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2024"
+description = "Abstractions for runtime-independent crates"
+authors = ["Manuel Garcia de la Vega Hoyo <manuelgdlvh@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/manuelgdlvh/runtime"
+categories = ["asynchronous"]
+keywords = ["runtime", "async",  "tokio"]
+
+
+
+[dependencies]
+futures = "0.3.32"
+tokio = { version = "1.52.3", features = ["full"], optional = true }
+
+[features]
+default = []
+tokio = ["dep:tokio"]
