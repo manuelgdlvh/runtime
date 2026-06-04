@@ -11,6 +11,7 @@ use crate::{
         Oneshot, OneshotReceiverOf, Receiver as OneshotReceiver, Sender as OneshotSender,
         TryRecvError,
     },
+    tcp::Tcp,
 };
 
 #[cfg(feature = "tokio")]
@@ -18,6 +19,7 @@ pub mod tokio;
 
 pub mod mpsc;
 pub mod oneshot;
+pub mod tcp;
 
 type Callback = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -38,6 +40,7 @@ pub trait Runtime: 'static {
     type JoinHandle<T: Send>: JoinHandle<T>;
     type Mpsc: Mpsc;
     type Oneshot: Oneshot;
+    type Tcp: Tcp;
 
     fn new(threads: usize) -> Self;
 
