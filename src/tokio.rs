@@ -1,9 +1,13 @@
 use futures::FutureExt;
 use tokio::runtime::LocalOptions;
 
-use crate::{JoinError, JoinHandle, Runtime, tokio::mpsc::TokioMpsc};
+use crate::{
+    JoinError, JoinHandle, Runtime,
+    tokio::{mpsc::TokioMpsc, oneshot::TokioOneshot},
+};
 
 pub mod mpsc;
+pub mod oneshot;
 
 pub enum Tokio {
     SingleThreaded { rt: tokio::runtime::LocalRuntime },
@@ -31,6 +35,7 @@ impl<T: Send> JoinHandle<T> for tokio::task::JoinHandle<T> {
 impl Runtime for Tokio {
     type JoinHandle<T: Send> = tokio::task::JoinHandle<T>;
     type Mpsc = TokioMpsc;
+    type Oneshot = TokioOneshot;
 
     fn new(threads: usize) -> Self {
         if threads > 1 {
@@ -80,6 +85,8 @@ impl Runtime for Tokio {
 #[cfg(test)]
 mod test {
 
+    use std::time::Duration;
+
     use crate::{Runtime, tokio::Tokio};
 
     fn async_test<F: Future>(threads: usize, f: F) -> F::Output {
@@ -105,9 +112,22 @@ mod test {
     #[test]
     fn test_defer_when_send_future_then_receive_result() {
         async_test(1, async move {
-            let handle = Tokio::defer(1, 1024);
+            let handle = Tokio::defer(1, 1024, async move {
+                tokio::time::sleep(Duration::from_secs(1)).await
+            });
             let result = handle.send(async move { "hello world!" }).await;
             assert!(matches!(result.await, Ok("hello world!")));
+        })
+    }
+
+    #[test]
+    fn test_defer_when_join_then_receive_future_output() {
+        async_test(1, async move {
+            let mut handle = Tokio::defer(1, 1024, async move {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                "hello world!"
+            });
+            assert!(matches!(handle.join().await, Ok("hello world!")));
         })
     }
 

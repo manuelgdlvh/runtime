@@ -1,14 +1,23 @@
 use std::{
-    pin::Pin,
+    pin::{Pin, pin},
     thread::{self},
 };
 
-use crate::mpsc::{Mpsc, MpscSenderOf, Receiver, Sender};
+use futures::FutureExt;
+
+use crate::{
+    mpsc::{Mpsc, MpscSenderOf, Receiver as MpscReceiver, Sender as MpscSender},
+    oneshot::{
+        Oneshot, OneshotReceiverOf, Receiver as OneshotReceiver, Sender as OneshotSender,
+        TryRecvError,
+    },
+};
 
 #[cfg(feature = "tokio")]
 pub mod tokio;
 
 pub mod mpsc;
+pub mod oneshot;
 
 type Callback = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -28,6 +37,7 @@ pub trait JoinHandle<T>: Send {
 pub trait Runtime: 'static {
     type JoinHandle<T: Send>: JoinHandle<T>;
     type Mpsc: Mpsc;
+    type Oneshot: Oneshot;
 
     fn new(threads: usize) -> Self;
 
@@ -45,53 +55,75 @@ pub trait Runtime: 'static {
     where
         Fut: Future;
 
-    fn defer(threads: usize, capacity: usize) -> Handle<Self>
+    fn defer<Fut>(threads: usize, capacity: usize, fut: Fut) -> Handle<Self, Fut>
     where
         Self: Sized,
+        Fut: Future + Send + 'static,
+        Fut::Output: Send,
     {
         let (tx, mut rx) = Self::Mpsc::channel::<Callback>(capacity);
+        let (tx_fut, rx_fut) = Self::Oneshot::channel::<Option<Fut::Output>>();
         thread::spawn(move || {
             let runtime = Self::new(threads);
-            runtime.block_on(async {
-                while let Ok(callback) = rx.recv().await {
-                    callback.await;
-                }
+            runtime.block_on(async move {
+                let mut fut = pin!(fut.fuse());
+                let output = loop {
+                    futures::select! {
+                        callback = rx.recv().fuse() => {
+                            match callback {
+                                Ok(callback) => {
+                                    callback.await;
+                                }
+                                // Handle dropped
+                                Err(_) => {
+                                    break None;
+                                }
+                            }
+                        }
+                       result = fut => {
+                           // Block on future returned
+                           break Some(result);
+                        }
+                    }
+                };
+
+                if let Err(_err) = tx_fut.send(output) {}
             });
         });
 
-        Handle::new(tx)
+        Handle::new(tx, rx_fut)
     }
 }
 
-pub struct Handle<R>
+pub struct Handle<R, Fut>
 where
+    Fut: Future,
+    Fut::Output: Send,
     R: Runtime,
 {
     tx: MpscSenderOf<R, Callback>,
+    rx: OneshotReceiverOf<R, Option<Fut::Output>>,
 }
 
-impl<R> Handle<R>
+impl<R, Fut> Handle<R, Fut>
 where
+    Fut: Future,
+    Fut::Output: Send,
     R: Runtime,
 {
-    fn new(tx: MpscSenderOf<R, Callback>) -> Self {
-        Self { tx }
+    fn new(tx: MpscSenderOf<R, Callback>, rx: OneshotReceiverOf<R, Option<Fut::Output>>) -> Self {
+        Self { tx, rx }
     }
 
     async fn send<F>(&self, f: F) -> JoinHandleOf<R, F::Output>
     where
         F: Future + Send + 'static,
-        F::Output: Send + 'static,
+        F::Output: Send,
     {
-        let (tx, mut rx) = R::Mpsc::channel::<JoinHandleOf<R, F::Output>>(1);
+        let (tx, mut rx) = R::Oneshot::channel::<JoinHandleOf<R, F::Output>>();
         let callback: Callback = Box::pin(async move {
             let handle = R::spawn(f);
-            if let Err(err) = tx.send(handle).await {
-                match err {
-                    mpsc::TrySendError::Full(_) => todo!(),
-                    mpsc::TrySendError::Closed(_) => todo!(),
-                }
-            }
+            if let Err(_) = tx.send(handle) {}
         });
 
         self.tx
@@ -102,5 +134,13 @@ where
         rx.recv()
             .await
             .expect("lifetime of runtime depends on handle")
+    }
+
+    fn join(&mut self) -> impl Future<Output = Result<Fut::Output, TryRecvError>> {
+        self.rx.recv().map(|res| match res {
+            Ok(Some(val)) => Ok(val),
+            Ok(None) => Err(TryRecvError::Empty),
+            Err(err) => Err(err),
+        })
     }
 }
