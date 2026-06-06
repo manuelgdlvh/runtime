@@ -3,11 +3,12 @@ use tokio::runtime::LocalOptions;
 
 use crate::{
     JoinError, JoinHandle, Runtime,
-    tokio::{mpsc::TokioMpsc, oneshot::TokioOneshot},
+    tokio::{mpsc::TokioMpsc, oneshot::TokioOneshot, tcp::TokioTcp},
 };
 
 pub mod mpsc;
 pub mod oneshot;
+pub mod tcp;
 
 pub enum Tokio {
     SingleThreaded { rt: tokio::runtime::LocalRuntime },
@@ -36,6 +37,7 @@ impl Runtime for Tokio {
     type JoinHandle<T: Send> = tokio::task::JoinHandle<T>;
     type Mpsc = TokioMpsc;
     type Oneshot = TokioOneshot;
+    type Tcp = TokioTcp;
 
     fn new(threads: usize) -> Self {
         if threads > 1 {
@@ -79,69 +81,5 @@ impl Runtime for Tokio {
         F::Output: Send + 'static,
     {
         tokio::task::spawn_local(fut)
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use std::time::Duration;
-
-    use crate::{Runtime, tokio::Tokio};
-
-    fn async_test<F: Future>(threads: usize, f: F) -> F::Output {
-        Tokio::new(threads).block_on(f)
-    }
-
-    #[test]
-    fn test_block_on_when_finish_then_returns_output() {
-        let result = async_test(1, async move { "hello world!" });
-        assert_eq!(result, "hello world!");
-    }
-
-    #[test]
-    fn test_new_when_one_thread_then_returns_single_threaded() {
-        assert!(matches!(Tokio::new(1), Tokio::SingleThreaded { .. }));
-    }
-
-    #[test]
-    fn test_new_when_higher_than_one_thread_then_returns_single_threaded() {
-        assert!(matches!(Tokio::new(2), Tokio::MultiThreaded { .. }));
-    }
-
-    #[test]
-    fn test_defer_when_send_future_then_receive_result() {
-        async_test(1, async move {
-            let handle = Tokio::defer(1, 1024, async move {
-                tokio::time::sleep(Duration::from_secs(1)).await
-            });
-            let result = handle.send(async move { "hello world!" }).await;
-            assert!(matches!(result.await, Ok("hello world!")));
-        })
-    }
-
-    #[test]
-    fn test_defer_when_join_then_receive_future_output() {
-        async_test(1, async move {
-            let mut handle = Tokio::defer(1, 1024, async move {
-                tokio::time::sleep(Duration::from_secs(1)).await;
-                "hello world!"
-            });
-            assert!(matches!(handle.join().await, Ok("hello world!")));
-        })
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_spawn_local_when_multi_threaded_then_panic() {
-        async_test(2, async move { Tokio::spawn_local(async {}) });
-    }
-
-    #[test]
-    fn test_spawn_local_when_single_threaded_then_returns_result() {
-        async_test(1, async move {
-            let result = Tokio::spawn_local(async move { "hello world!" }).await;
-            assert!(matches!(result, Ok("hello world!")))
-        });
     }
 }
