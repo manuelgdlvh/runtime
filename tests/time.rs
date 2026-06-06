@@ -32,3 +32,10 @@ pub fn timeout_test_when_sleep_returns_earlier_then_returns_error<R: Runtime>() 
         assert!(matches!(result, Err(TimedOut {})));
     });
 }
+
+pub fn timeout_test_when_future_does_not_yield_then_returns_result<R: Runtime>() {
+    R::new(1).block_on(async move {
+        let result = R::Time::timeout(Duration::ZERO, async move { "hello world!" }).await;
+        assert!(matches!(result, Ok("hello world!")));
+    });
+}

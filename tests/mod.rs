@@ -74,6 +74,11 @@ macro_rules! test_suite {
                 fn timeout_test_when_sleep_returns_earlier_then_returns_error() {
                     $crate::time::timeout_test_when_sleep_returns_earlier_then_returns_error::<$runtime>();
                 }
+
+                #[test]
+                fn timeout_test_when_future_does_not_yield_then_returns_result() {
+                    $crate::time::timeout_test_when_future_does_not_yield_then_returns_result::<$runtime>();
+                }
             }
         }
 
