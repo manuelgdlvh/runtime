@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use runtime::{JoinHandle, Runtime, oneshot};
+use asynkit::{JoinHandle, Runtime, oneshot};
 
-use runtime::time::Time;
+use asynkit::time::Time;
 
 pub async fn block_on_returns_completed_future_value<R: Runtime>() {
     assert_eq!(async { "hello world!" }.await, "hello world!");

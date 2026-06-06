@@ -26,7 +26,7 @@ macro_rules! test_suite {
     ($name:ident, $runtime:ty) => {
         mod $name {
             mod runtime {
-                use runtime::Runtime;
+                use asynkit::Runtime;
 
                 test!(
                     $runtime,
@@ -57,7 +57,7 @@ macro_rules! test_suite {
             }
 
             mod tcp {
-                use runtime::Runtime;
+                use asynkit::Runtime;
 
                 test!($runtime, 1, tcp::listener_bind_succeeds_on_localhost);
                 test!($runtime, 1, tcp::stream_connect_succeeds_to_bound_listener);
@@ -65,7 +65,7 @@ macro_rules! test_suite {
             }
 
             mod time {
-                use runtime::Runtime;
+                use asynkit::Runtime;
 
                 test!(
                     $runtime,
@@ -93,4 +93,4 @@ macro_rules! test_suite {
 }
 
 #[cfg(feature = "tokio")]
-test_suite!(tokio, ::runtime::tokio::Tokio);
+test_suite!(tokio, ::asynkit::tokio::Tokio);

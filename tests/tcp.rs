@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use runtime::{
+use asynkit::{
     Runtime,
     tcp::{Listener, Read, Stream, Tcp, Write},
     time::Time,

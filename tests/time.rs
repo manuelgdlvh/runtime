@@ -1,8 +1,8 @@
 use std::ops::Add;
 use std::time::{Duration, Instant};
 
-use runtime::Runtime;
-use runtime::time::{Time, TimedOut};
+use asynkit::Runtime;
+use asynkit::time::{Time, TimedOut};
 
 pub async fn sleep_delays_for_at_least_requested_duration<R: Runtime>() {
     let now = Instant::now();
