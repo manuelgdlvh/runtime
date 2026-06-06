@@ -6,6 +6,7 @@ use std::{
 use runtime::{
     Runtime,
     tcp::{Listener, Read, Stream, Tcp, Write},
+    time::Time,
 };
 
 pub fn listener_test_when_bind_then_returns_tcp_listener<R: Runtime>() {
@@ -26,8 +27,7 @@ pub fn stream_test_when_connect_then_returns_tcp_stream<R: Runtime>() {
 
             while let Ok(_) = listener.accept().await {}
         });
-        tokio::time::sleep(Duration::from_millis(250)).await;
-
+        R::Time::sleep(Duration::from_millis(250)).await;
         R::Tcp::stream(addr).await
     });
 
@@ -50,8 +50,8 @@ pub fn stream_test_when_write_then_read_sucess<R: Runtime>() {
             }
         });
 
-        // TOOD: Change this
-        tokio::time::sleep(Duration::from_millis(250)).await;
+        R::Time::sleep(Duration::from_millis(250)).await;
+
         let (mut read, mut write) = R::Tcp::stream(addr).await.unwrap().split();
 
         let mut buf = [0; 12];
