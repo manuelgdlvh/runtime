@@ -1,5 +1,5 @@
 [package]
-name = "runtime"
+name = "asynkit"
 version = "0.1.0"
 edition = "2024"
 description = "Abstractions for runtime-independent crates"
