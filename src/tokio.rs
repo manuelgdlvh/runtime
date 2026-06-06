@@ -3,12 +3,13 @@ use tokio::runtime::LocalOptions;
 
 use crate::{
     JoinError, JoinHandle, Runtime,
-    tokio::{mpsc::TokioMpsc, oneshot::TokioOneshot, tcp::TokioTcp},
+    tokio::{mpsc::TokioMpsc, oneshot::TokioOneshot, tcp::TokioTcp, time::TokioTime},
 };
 
 pub mod mpsc;
 pub mod oneshot;
 pub mod tcp;
+pub mod time;
 
 pub enum Tokio {
     SingleThreaded { rt: tokio::runtime::LocalRuntime },
@@ -38,6 +39,7 @@ impl Runtime for Tokio {
     type Mpsc = TokioMpsc;
     type Oneshot = TokioOneshot;
     type Tcp = TokioTcp;
+    type Time = TokioTime;
 
     fn new(threads: usize) -> Self {
         if threads > 1 {

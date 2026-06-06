@@ -1,5 +1,6 @@
 pub mod runtime;
 pub mod tcp;
+pub mod time;
 
 #[macro_export]
 macro_rules! test_suite {
@@ -59,7 +60,23 @@ macro_rules! test_suite {
                     $crate::tcp::stream_test_when_write_then_read_sucess::<$runtime>();
                 }
             }
+            mod time {
+                #[test]
+                fn sleep_test_when_invoked_then_wait() {
+                    $crate::time::sleep_test_when_invoked_then_wait::<$runtime>();
+                }
+
+                #[test]
+                fn timeout_test_when_future_returns_earlier_then_returns_result() {
+                    $crate::time::timeout_test_when_future_returns_earlier_then_returns_result::<$runtime>();
+                }
+                #[test]
+                fn timeout_test_when_sleep_returns_earlier_then_returns_error() {
+                    $crate::time::timeout_test_when_sleep_returns_earlier_then_returns_error::<$runtime>();
+                }
+            }
         }
+
     };
 }
 

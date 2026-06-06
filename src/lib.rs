@@ -12,6 +12,7 @@ use crate::{
         TryRecvError,
     },
     tcp::Tcp,
+    time::Time,
 };
 
 #[cfg(feature = "tokio")]
@@ -20,6 +21,7 @@ pub mod tokio;
 pub mod mpsc;
 pub mod oneshot;
 pub mod tcp;
+pub mod time;
 
 type Callback = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -41,6 +43,7 @@ pub trait Runtime: 'static {
     type Mpsc: Mpsc;
     type Oneshot: Oneshot;
     type Tcp: Tcp;
+    type Time: Time;
 
     fn new(threads: usize) -> Self;
 
