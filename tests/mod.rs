@@ -10,34 +10,36 @@ macro_rules! test_suite {
             mod runtime {
 
                 #[test]
-                fn test_block_on_when_finish_then_returns_output() {
-                    $crate::runtime::test_block_on_when_finish_then_returns_output::<$runtime>();
+                fn block_on_returns_completed_future_value() {
+                    $crate::runtime::block_on_returns_completed_future_value::<$runtime>();
                 }
 
                 #[test]
-                fn test_defer_when_spawn_then_receive_result() {
-                    $crate::runtime::test_defer_when_spawn_then_receive_result::<$runtime>();
+                fn defer_spawn_returns_joined_task_result() {
+                    $crate::runtime::defer_spawn_returns_joined_task_result::<$runtime>();
                 }
 
                 #[test]
-                fn test_defer_when_join_then_receive_future_output() {
-                    $crate::runtime::test_defer_when_join_then_receive_future_output::<$runtime>();
+                fn defer_join_returns_deferred_future_output() {
+                    $crate::runtime::defer_join_returns_deferred_future_output::<$runtime>();
                 }
 
                 #[test]
-                fn test_defer_when_spawn_and_block_on_returns_then_disconnected_error() {
-                    $crate::runtime::test_defer_when_spawn_and_block_on_returns_then_disconnected_error::<$runtime>();
+                fn defer_spawn_after_runtime_dropped_returns_disconnected() {
+                    $crate::runtime::defer_spawn_after_runtime_dropped_returns_disconnected::<
+                        $runtime,
+                    >();
                 }
 
                 #[test]
                 #[should_panic]
-                fn test_spawn_local_when_multi_threaded_then_panic() {
-                    $crate::runtime::test_spawn_local_when_multi_threaded_then_panic::<$runtime>();
+                fn spawn_local_panics_on_multi_threaded_runtime() {
+                    $crate::runtime::spawn_local_panics_on_multi_threaded_runtime::<$runtime>();
                 }
 
                 #[test]
-                fn test_spawn_local_when_single_threaded_then_returns_result() {
-                    $crate::runtime::test_spawn_local_when_single_threaded_then_returns_result::<
+                fn spawn_local_returns_result_on_single_threaded_runtime() {
+                    $crate::runtime::spawn_local_returns_result_on_single_threaded_runtime::<
                         $runtime,
                     >();
                 }
@@ -46,42 +48,41 @@ macro_rules! test_suite {
             mod tcp {
 
                 #[test]
-                fn listener_test_when_bind_then_returns_tcp_listener() {
-                    $crate::tcp::listener_test_when_bind_then_returns_tcp_listener::<$runtime>();
+                fn listener_bind_succeeds_on_localhost() {
+                    $crate::tcp::listener_bind_succeeds_on_localhost::<$runtime>();
                 }
 
                 #[test]
-                fn stream_test_when_connect_then_returns_tcp_stream() {
-                    $crate::tcp::stream_test_when_connect_then_returns_tcp_stream::<$runtime>();
+                fn stream_connect_succeeds_to_bound_listener() {
+                    $crate::tcp::stream_connect_succeeds_to_bound_listener::<$runtime>();
                 }
 
                 #[test]
-                fn stream_test_when_write_then_read_sucess() {
-                    $crate::tcp::stream_test_when_write_then_read_sucess::<$runtime>();
+                fn stream_read_write_round_trip_succeeds() {
+                    $crate::tcp::stream_read_write_round_trip_succeeds::<$runtime>();
                 }
             }
             mod time {
                 #[test]
-                fn sleep_test_when_invoked_then_wait() {
-                    $crate::time::sleep_test_when_invoked_then_wait::<$runtime>();
+                fn sleep_delays_for_at_least_requested_duration() {
+                    $crate::time::sleep_delays_for_at_least_requested_duration::<$runtime>();
                 }
 
                 #[test]
-                fn timeout_test_when_future_returns_earlier_then_returns_result() {
-                    $crate::time::timeout_test_when_future_returns_earlier_then_returns_result::<$runtime>();
+                fn timeout_returns_ok_when_future_completes_in_time() {
+                    $crate::time::timeout_returns_ok_when_future_completes_in_time::<$runtime>();
                 }
                 #[test]
-                fn timeout_test_when_sleep_returns_earlier_then_returns_error() {
-                    $crate::time::timeout_test_when_sleep_returns_earlier_then_returns_error::<$runtime>();
+                fn timeout_returns_timed_out_when_future_exceeds_limit() {
+                    $crate::time::timeout_returns_timed_out_when_future_exceeds_limit::<$runtime>();
                 }
 
                 #[test]
-                fn timeout_test_when_future_does_not_yield_then_returns_result() {
-                    $crate::time::timeout_test_when_future_does_not_yield_then_returns_result::<$runtime>();
+                fn timeout_with_zero_duration_returns_immediate_future() {
+                    $crate::time::timeout_with_zero_duration_returns_immediate_future::<$runtime>();
                 }
             }
         }
-
     };
 }
 

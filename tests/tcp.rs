@@ -9,7 +9,7 @@ use runtime::{
     time::Time,
 };
 
-pub fn listener_test_when_bind_then_returns_tcp_listener<R: Runtime>() {
+pub fn listener_bind_succeeds_on_localhost<R: Runtime>() {
     let listener = R::new(1).block_on(async move {
         let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8080);
 
@@ -18,7 +18,7 @@ pub fn listener_test_when_bind_then_returns_tcp_listener<R: Runtime>() {
 
     assert!(matches!(listener, Ok(_)));
 }
-pub fn stream_test_when_connect_then_returns_tcp_stream<R: Runtime>() {
+pub fn stream_connect_succeeds_to_bound_listener<R: Runtime>() {
     let stream = R::new(1).block_on(async move {
         let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8081);
         R::spawn_local(async move {
@@ -34,7 +34,7 @@ pub fn stream_test_when_connect_then_returns_tcp_stream<R: Runtime>() {
     assert!(matches!(stream, Ok(_)))
 }
 
-pub fn stream_test_when_write_then_read_sucess<R: Runtime>() {
+pub fn stream_read_write_round_trip_succeeds<R: Runtime>() {
     R::new(1).block_on(async move {
         let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8082);
         R::spawn_local(async move {
