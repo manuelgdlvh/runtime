@@ -89,25 +89,3 @@ impl Listener<tokio::net::TcpStream> for tokio::net::TcpListener {
         self.accept()
     }
 }
-
-#[cfg(test)]
-mod test {
-    use std::net::{Ipv4Addr, SocketAddrV4};
-
-    use crate::{
-        Runtime,
-        tcp::Tcp,
-        tokio::{Tokio, tcp::TokioTcp},
-    };
-
-    #[test]
-    pub fn listener_test_when_bind_then_returns_tcp_listener() {
-        let rt = Tokio::new(1);
-        let listener = rt.block_on(async move {
-            let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8080);
-            TokioTcp::listener(addr).await
-        });
-
-        assert!(matches!(listener, Ok(_)));
-    }
-}

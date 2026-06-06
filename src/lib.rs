@@ -118,7 +118,7 @@ where
         Self { tx, rx }
     }
 
-    async fn send<F>(&self, f: F) -> JoinHandleOf<R, F::Output>
+    pub async fn spawn<F>(&self, f: F) -> Result<JoinHandleOf<R, F::Output>, oneshot::TryRecvError>
     where
         F: Future + Send + 'static,
         F::Output: Send,
@@ -129,17 +129,15 @@ where
             if let Err(_) = tx.send(handle) {}
         });
 
-        self.tx
-            .send(callback)
-            .await
-            .expect("lifetime of runtime depends on handle");
+        self.tx.send(callback).await.map_err(|err| match err {
+            mpsc::TrySendError::Full(_) => unreachable!(),
+            mpsc::TrySendError::Closed(_) => oneshot::TryRecvError::Disconnected,
+        })?;
 
-        rx.recv()
-            .await
-            .expect("lifetime of runtime depends on handle")
+        rx.recv().await
     }
 
-    fn join(&mut self) -> impl Future<Output = Result<Fut::Output, TryRecvError>> {
+    pub fn join(&mut self) -> impl Future<Output = Result<Fut::Output, TryRecvError>> {
         self.rx.recv().map(|res| match res {
             Ok(Some(val)) => Ok(val),
             Ok(None) => Err(TryRecvError::Empty),
